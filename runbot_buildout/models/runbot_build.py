@@ -235,6 +235,23 @@ class RunbotBuild(models.Model):
 
     @api.multi
     def _adapt_buildout(self):
+        """Adapt buildout configuration to build with specific branch and
+        options.
+        """
+        # Clean merges to repository for branch under test:
+        existing_lines = []
+        with open(self.path('buildout.cfg')) as existing_buildout:
+            existing_lines = existing_buildout.readlines()
+        with open(self.path('buildout.cfg'), "w") as existing_buildout:
+            in_merges = False
+            for line in existing_lines:
+                if line[0:6] == 'merges':
+                    in_merges = True
+                elif line.strip() == '':
+                    in_merges = False
+                if not (in_merges and self.repo_id_name in line):
+                    existing_buildout.write(line)
+        # Create sextended buildout configuration:
         adaption_script = file_open(
             'runbot_buildout/__scripts__/adapt_buildout.py'
         )
