@@ -251,7 +251,12 @@ class RunbotBuild(models.Model):
                     in_merges = False
                 if not (in_merges and self.repo_id_name in line):
                     existing_buildout.write(line)
-        # Create sextended buildout configuration:
+                else:
+                    self._log(
+                        'buildout',
+                        'Remove line %s from buildout.cfg' % line
+                    ) 
+        # Create extended buildout configuration:
         adaption_script = file_open(
             'runbot_buildout/__scripts__/adapt_buildout.py'
         )
