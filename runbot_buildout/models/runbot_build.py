@@ -1,11 +1,13 @@
-# Copyright 2017-2019 Therp BV <https://therp.nl>
+# Copyright 2017-2020 Therp BV <https://therp.nl>.
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 import glob
 import os
+from os.path import dirname, abspath
 import requests
 import shutil
 import subprocess
 import tempfile
+
 try:
     from anybox.recipe.odoo.base import BaseRecipe
     from zc.buildout.buildout import Buildout
@@ -13,6 +15,7 @@ except ImportError:
     BaseRecipe = object
     Buildout = object
 from multiprocessing import Process
+
 from odoo import api, fields, models
 from odoo.addons.runbot.common import lock, grep
 
@@ -167,8 +170,15 @@ class RunbotBuild(models.Model):
     def _job_20_test_all(self, build, lock_path, log_path):
         if build.repo_id.uses_buildout and build.branch_id.buildout_version:
             build._log('buildout', 'Running buildout')
+            module_dir = dirname(dirname(abspath(__file__)))
+            script_path = os.path.join(module_dir, "run_buildout.sh")
+            requirements_path = os.path.join(module_dir, "requirements-bootstrap.txt")
             return build._spawn_buildout(
-                [build._path('bin/buildout'), '-N', '-q'],
+                [
+                    script_path,
+                    requirements_path,
+                    build._path(),
+                ],
                 lock_path, log_path
             )
         return super(RunbotBuild, self)._job_20_test_all(
@@ -226,6 +236,7 @@ class RunbotBuild(models.Model):
 
     @api.multi
     def _bootstrap_buildout(self, lock_path, log_path, delete_server=True):
+        return MAGIC_PID_RUN_NEXT_JOB  # Fake pid
         self.ensure_one()
         if delete_server:
             # self.checkout creates this directory, this interferes with the
